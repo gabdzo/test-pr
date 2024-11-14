@@ -1,46 +1,36 @@
-name: Update Test-Main Values
+name: Trigger Target Workflow
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      target_service:
+        description: 'Input a service name (e.g., demo-app)'
+        required: true
+      target_version:
+        description: 'Input a version (e.g., v1.0.0)'
+        required: true
   pull_request:
     branches:
       - main
 
 jobs:
-  update-test-main:
+  trigger:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Get version from commit
-        id: get-version
+      - name: Trigger Workflow in Another Repository
         run: |
-          VERSION=$(git rev-parse --short HEAD)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.PAT_TOKEN }}
-          path: gabdzo/test-main
-          commit-message: "chore: update version to ${{ steps.get-version.outputs.version }}"
-          title: "Update version to ${{ steps.get-version.outputs.version }}"
-          body: |
-            Automated PR to update version in values.yaml
-            
-            Changes made:
-            ```diff
-            - tag: old_version
-            + tag: ${{ steps.get-version.outputs.version }}
-            - version: old_version
-            + version: ${{ steps.get-version.outputs.version }}
-            ```
-            
-            Version: ${{ steps.get-version.outputs.version }}
-          branch: update-version
-          base: main 
+          # Set the required variables
+          repo_owner="gabdzo" 
+          repo_name="test-main"  
+          event_type="trigger-workflow" 
+          service="demo-app"
+          version="v1.0.0"
+  
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/$repo_owner/$repo_name/dispatches \
+            -d "{\"event_type\": \"$event_type\", \"client_payload\": {\"service\": \"$service\", \"version\": \"$version\", \"unit\": false, \"integration\": true}}"
