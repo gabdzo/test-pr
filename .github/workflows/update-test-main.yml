@@ -1,0 +1,46 @@
+name: Update Test-Main Values
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  update-test-main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from commit
+        id: get-version
+        run: |
+          VERSION=$(git rev-parse --short HEAD)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          path: gabdzo/test-main
+          commit-message: "chore: update version to ${{ steps.get-version.outputs.version }}"
+          title: "Update version to ${{ steps.get-version.outputs.version }}"
+          body: |
+            Automated PR to update version in values.yaml
+            
+            Changes made:
+            ```diff
+            - tag: old_version
+            + tag: ${{ steps.get-version.outputs.version }}
+            - version: old_version
+            + version: ${{ steps.get-version.outputs.version }}
+            ```
+            
+            Version: ${{ steps.get-version.outputs.version }}
+          branch: update-version
+          base: main 
